@@ -154,8 +154,21 @@ function vitePluginManusDebugCollector(): Plugin {
 // postMessage commands from any origin) and the source-location attributes are
 // tooling for the managed preview. They must never ship in a self-hosted build.
 const selfHostedBuild = process.env.VITE_SELF_HOSTED_MODE === "true";
+
+// client/public/__manus__/ only serves the dev-time debug collector; Vite copies
+// publicDir verbatim, so remove it from self-hosted output.
+function stripPreviewAssets(): Plugin {
+  return {
+    name: "strip-preview-assets",
+    apply: "build",
+    closeBundle() {
+      fs.rmSync(path.resolve(PROJECT_ROOT, "dist/public/__manus__"), { recursive: true, force: true });
+    },
+  };
+}
+
 const plugins = selfHostedBuild
-  ? [react(), tailwindcss()]
+  ? [react(), tailwindcss(), stripPreviewAssets()]
   : [react(), tailwindcss(), jsxLocPlugin(), vitePluginManusRuntime(), vitePluginManusDebugCollector()];
 
 export default defineConfig({
