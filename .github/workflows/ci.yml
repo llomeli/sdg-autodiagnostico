@@ -1,0 +1,54 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm check
+      - run: pnpm test
+      - run: VITE_SELF_HOSTED_MODE=true pnpm build
+      - name: Production dependencies have no high/critical advisories
+        run: pnpm audit --prod --audit-level=high
+      - name: Self-hosted bundle contains no preview runtime
+        run: |
+          ! grep -q 'manus-runtime' dist/public/index.html
+          test ! -e dist/public/__manus__
+
+  docker:
+    runs-on: ubuntu-latest
+    needs: verify
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image (clean, no cache)
+        run: docker build --no-cache -t sdg-lead-magnet:ci .
+      - name: Smoke test (image starts, serves, is healthy, rejects weak config)
+        run: |
+          docker network create sdgci
+          docker run -d --name db --network sdgci -e MYSQL_DATABASE=sdg -e MYSQL_USER=app -e MYSQL_PASSWORD=apppass-ci-0123456789 -e MYSQL_ROOT_PASSWORD=rootpass-ci-0123456789 \
+            -v "$PWD/docker/mysql/init:/docker-entrypoint-initdb.d:ro" mysql:8.4
+          for i in $(seq 1 60); do docker exec db sh -c 'MYSQL_PWD=$MYSQL_ROOT_PASSWORD mysqladmin ping -uroot --silent' && break; sleep 2; done
+          docker run -d --name app --network sdgci -p 3000:3000 \
+            -e SELF_HOSTED_MODE=true -e DATABASE_URL=mysql://app:apppass-ci-0123456789@db:3306/sdg \
+            -e JWT_SECRET=$(openssl rand -hex 32) -e LOCAL_ADMIN_PASSWORD=$(openssl rand -hex 24) -e PRIVACY_NOTICE_VERSION=ci \
+            sdg-lead-magnet:ci
+          for i in $(seq 1 30); do curl -fsS localhost:3000/readyz && break; sleep 2; done
+          curl -fsS localhost:3000/ | grep -q '<div id="root">'
+          curl -sI localhost:3000/ | grep -qi '^content-security-policy:'
+          test "$(curl -s -o /dev/null -w '%{http_code}' localhost:3000/api/trpc/admin.listSubmissions)" = "401"
+          docker run --rm -e SELF_HOSTED_MODE=true -e DATABASE_URL=mysql://x@db/x -e JWT_SECRET=short sdg-lead-magnet:ci && exit 1 || echo "weak config rejected"
+      - if: always()
+        run: docker logs app || true

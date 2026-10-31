@@ -1,0 +1,69 @@
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VITE_SELF_HOSTED_MODE: "true"
+        VITE_PRIVACY_NOTICE_URL: ${VITE_PRIVACY_NOTICE_URL:-}
+        VITE_LEGAL_ENTITY_NAME: ${VITE_LEGAL_ENTITY_NAME:-}
+    image: sdg-data-governance-lead-magnet:${APP_VERSION:-local}
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      SELF_HOSTED_MODE: "true"
+      DATABASE_URL: mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@db:3306/${MYSQL_DATABASE}
+    # Published on loopback only: put an HTTPS reverse proxy (deploy/Caddyfile.example)
+    # in front. Set APP_BIND=0.0.0.0 only for a closed network test.
+    ports:
+      - "${APP_BIND:-127.0.0.1}:${APP_PORT:-3000}:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    logging: *logging
+
+  db:
+    image: mysql:8.4
+    restart: unless-stopped
+    command:
+      [
+        "--character-set-server=utf8mb4",
+        "--collation-server=utf8mb4_unicode_ci",
+      ]
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    # No "ports:" on purpose: the database is reachable only from the app container.
+    volumes:
+      - sdg_mysql_data:/var/lib/mysql
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      # Credentials via env inside the container, not on the command line.
+      test: ["CMD-SHELL", "MYSQL_PWD=\"$$MYSQL_ROOT_PASSWORD\" mysqladmin ping -h localhost -uroot --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    security_opt:
+      - no-new-privileges:true
+    logging: *logging
+
+volumes:
+  sdg_mysql_data:

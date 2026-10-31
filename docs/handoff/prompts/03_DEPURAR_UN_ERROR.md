@@ -1,0 +1,5 @@
+# Prompt: reproducir y diagnosticar un error
+
+> Investiga este defecto del autodiagnóstico SDG: [síntoma, paso exacto, texto de error, navegador/dispositivo, fecha/hora y si ocurrió varias veces]. Primero revisa la versión actual y el flujo afectado; separa observaciones, hipótesis y causa confirmada. Reproduce con datos sintéticos (dominio `.invalid`) y nunca uses ni expongas PII real. Inspecciona respuesta del backend, logs sanitizados, esquemas de formulario/DB, estado visual y build.
+>
+> Si corriges, añade/regresa pruebas Vitest en la ruta incluida por `vitest.config.ts`, verifica tipo/build y ejecuta un flujo end-to-end relevante. No deshabilites una validación segura para que pase el test; alinea validaciones cliente y servidor y ofrece al usuario un mensaje accionable. Limpia los registros de prueba creados por ti, con un filtro exacto que no afecte a datos reales. Resume causa, archivos tocados, pruebas observables, limitaciones y si afecta o no a producción. No afirmar que cambiaste la versión publicada si sólo corregiste una rama o artefacto local.

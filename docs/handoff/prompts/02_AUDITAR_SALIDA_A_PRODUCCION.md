@@ -1,0 +1,7 @@
+# Prompt: auditoría previa a producción
+
+> Revisa el paquete del autodiagnóstico SDG con foco en una primera producción para prospectos en México. Analiza código, archivos Docker/Compose, variables, endpoints, esquema y documentación. Entrega un informe priorizado P0/P1/P2 con hallazgo, evidencia verificable (ruta/fragmento), impacto, solución propuesta, responsable y criterio de aceptación. Separa seguridad de aplicación, infraestructura, privacidad/datos personales, operación/backup, UX/accesibilidad, QA y continuidad comercial.
+>
+> Debes verificar, como mínimo: Aviso de Privacidad y consentimiento final; minimización, finalidad, retención, derechos/eliminación y transferencias/CRM; control de `/admin`, cookies, credenciales y secretos; validación server-side/client-side; abuso/duplicados/rate limit; persistencia atómica de cabecera+respuestas; SQL, logs, HTTPS/headers; no exposición de DB; backup cifrado y restauración; status/monitorización; dependencias/SBOM; accesibilidad/responsive; instalación Docker limpia incluyendo `patches/wouter@3.7.1.patch`; rollback y proceso de incidentes.
+>
+> No declares cumplimiento legal ni seguridad certificada. No marques una prueba aprobada si no se ejecutó ni inventes evidencia. Distingue hallazgos observados de recomendaciones. No publiques datos personales, secretos o contenido propietario en el informe. No modifiques producción ni elimines datos. Antes de proponer una acción externa o destructiva, solicita autorización.

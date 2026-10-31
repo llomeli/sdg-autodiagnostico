@@ -1,0 +1,32 @@
+# Proxy inverso HTTPS de referencia (Caddy obtiene y renueva certificados automáticamente).
+# Instalación en el host: https://caddyserver.com/docs/install  ·  Copia a /etc/caddy/Caddyfile.
+# En .env de la app: TRUST_PROXY="loopback,uniquelocal", COOKIE_SECURE=true.
+
+autodiagnostico.example.com {
+	encode zstd gzip
+
+	# Panel interno: restringe por IP/VPN además del login (ajusta los rangos).
+	@admin path /admin /admin/* /api/trpc/admin.* /api/trpc/auth.*
+	handle @admin {
+		@outside not remote_ip 10.0.0.0/8 192.168.0.0/16 203.0.113.0/24
+		respond @outside 403
+		reverse_proxy 127.0.0.1:3000
+	}
+
+	handle {
+		reverse_proxy 127.0.0.1:3000
+	}
+
+	request_body {
+		max_size 512KB
+	}
+
+	log {
+		output file /var/log/caddy/autodiagnostico.log {
+			roll_size 20MiB
+			roll_keep 10
+		}
+		# No registrar cuerpos de petición: contienen datos personales.
+		format json
+	}
+}

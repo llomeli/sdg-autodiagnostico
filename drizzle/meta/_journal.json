@@ -1,0 +1,34 @@
+{
+  "version": "7",
+  "dialect": "mysql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1788835376818,
+      "tag": "0000_soft_wolfsbane",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1788835462405,
+      "tag": "0001_safe_iron_monger",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1788836065046,
+      "tag": "0002_dizzy_marvel_apes",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1793449563834,
+      "tag": "0003_privacy_version_and_fk",
+      "breakpoints": true
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+# Prompt: diseñar CRM y seguimiento de prospectos
+
+> Diseña una integración de seguimiento de prospectos para el autodiagnóstico SDG, considerando México, privacidad por diseño, minimización y consentimiento explícito. El MVP hoy almacena prospecto y respuestas en MySQL/panel; no envía emails ni sincroniza CRM. No asumas proveedor: compara [CRM preferido] con una opción mínima manual, identifica campos estrictamente necesarios, mapeo, autenticación secreta server-side, deduplicación, reintentos/idempotencia, registro de transferencias, manejo de revocaciones y borrado.
+>
+> Entrega arquitectura, cambios mínimos por componente, variables requeridas sin valores de secreto, pruebas unitarias/integración, plan de rollback, métricas y decisiones que deben aprobar Legal/Sales Ops/TI. No envíes puntuación/respuestas completas por email; usa aviso interno con ID/link seguro si la política lo permite. No ejecutes envíos externos ni modifiques CRM sin autorización del propietario y una prueba acordada. No conectes información sin confirmar la base legal/aviso y contrato de encargado.

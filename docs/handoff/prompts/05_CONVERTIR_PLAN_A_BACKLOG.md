@@ -1,0 +1,5 @@
+# Prompt: convertir el plan de salida en backlog
+
+> Convierte `docs/03_PLAN_MVP_A_PRODUCCION.md` en un backlog de lanzamiento de 2–4 semanas para [fecha objetivo], adaptado a [plataforma y tamaño de equipo]. Cada tarea debe tener identificador, prioridad, responsable por función, dependencia, estimación relativa, evidencia de cierre y criterio de aceptación. Distingue bloqueadores P0 de mejoras P1 y trabajo post-lanzamiento. Mantén legal/privacidad como puerta de aprobación de personas competentes; no redactes un aviso legal definitivo ni asumas que una tarea puede autorizar el tratamiento.
+>
+> Asegúrate de incluir build Docker limpio con parche de Wouter, instalación en staging, dominio/HTTPS, panel admin, prueba de captura, backups/restauración, borrado/retención, monitoreo, antispam, transacción/idempotencia, proceso manual o CRM de seguimiento, pruebas móviles/accesibles, revisión de seguridad y rollback. Conserva responsables humanos; no marques completa ninguna tarea sin evidencia real.

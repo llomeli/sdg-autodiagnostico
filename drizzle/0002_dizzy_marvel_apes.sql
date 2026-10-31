@@ -1,0 +1,1 @@
+ALTER TABLE `prospect_submissions` ADD `interlocutors` text;
