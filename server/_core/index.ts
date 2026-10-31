@@ -15,6 +15,7 @@ import {
   submitRateLimiter,
 } from "./security";
 import { pingDb } from "../db";
+import { runMigrations } from "./migrate";
 
 const isDevelopment = process.env.NODE_ENV === "development";
 
@@ -46,6 +47,25 @@ async function startServer() {
       throw new Error(
         "Configuración inválida para producción; revisa las variables de entorno."
       );
+    }
+  }
+
+  // Schema changes ship with the image and are applied before serving traffic.
+  // The database may still be starting (MySQL's container restarts once after init;
+  // Cloud SQL can be briefly unreachable on cold start), so retry before giving up.
+  if (process.env.MIGRATE_ON_START !== "false") {
+    const attempts = Number(process.env.MIGRATE_ATTEMPTS ?? 30);
+    for (let attempt = 1; ; attempt++) {
+      try {
+        await runMigrations();
+        break;
+      } catch (error) {
+        if (attempt >= attempts) throw error;
+        console.warn(
+          `[Migrate] intento ${attempt}/${attempts} falló (${(error as Error).message.split("\n")[0]}); reintento en 2 s`
+        );
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
     }
   }
 

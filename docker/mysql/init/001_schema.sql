@@ -43,12 +43,18 @@ CREATE TABLE IF NOT EXISTS `prospect_submissions` (
   `overallScore` int,
   `status` enum('new','reviewing','contacted','qualified','archived') NOT NULL DEFAULT 'new',
   `source` varchar(80) NOT NULL DEFAULT 'web-autodiagnostico',
+  `assignedTo` varchar(120),
+  `nextAction` varchar(255),
+  `nextActionAt` timestamp NULL,
+  `lastContactAt` timestamp NULL,
   `createdAt` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updatedAt` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   CONSTRAINT `prospect_submissions_id` PRIMARY KEY (`id`),
   INDEX `prospect_submissions_email_idx` (`workEmail`),
   INDEX `prospect_submissions_created_idx` (`createdAt`),
-  INDEX `prospect_submissions_status_idx` (`status`)
+  INDEX `prospect_submissions_status_idx` (`status`),
+  INDEX `prospect_submissions_assigned_idx` (`assignedTo`),
+  INDEX `prospect_submissions_next_action_idx` (`nextActionAt`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `assessment_responses` (
@@ -68,4 +74,16 @@ CREATE TABLE IF NOT EXISTS `assessment_responses` (
   INDEX `assessment_responses_domain_idx` (`domain`),
   INDEX `assessment_responses_question_idx` (`questionId`),
   CONSTRAINT `assessment_responses_submissionId_prospect_submissions_id_fk` FOREIGN KEY (`submissionId`) REFERENCES `prospect_submissions`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `lead_activities` (
+  `id` int AUTO_INCREMENT NOT NULL,
+  `submissionId` int NOT NULL,
+  `type` enum('note','call','email','meeting','status','assignment') NOT NULL,
+  `body` text NOT NULL,
+  `author` varchar(120) NOT NULL,
+  `createdAt` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT `lead_activities_id` PRIMARY KEY (`id`),
+  INDEX `lead_activities_submission_idx` (`submissionId`, `createdAt`),
+  CONSTRAINT `lead_activities_submissionId_prospect_submissions_id_fk` FOREIGN KEY (`submissionId`) REFERENCES `prospect_submissions`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

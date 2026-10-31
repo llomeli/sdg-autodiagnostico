@@ -36,5 +36,6 @@ La primera ejecución tarda 15–20 min (Cloud SQL); si el token de 1 h vence a 
 - Contraseña del panel: `gcloud secrets versions access latest --secret sdg-admin-password` (la lee el dueño; el agente no la imprime).
 - `ACCESS=public` publica sin control de acceso: **no usar** mientras el Aviso de Privacidad no esté aprobado.
 - Con el aviso aprobado: añadir `PRIVACY_NOTICE_VERSION=… VITE_PRIVACY_NOTICE_URL=… VITE_LEGAL_ENTITY_NAME="…"` y volver a ejecutar.
-- `TRUST_PROXY=1` y `COOKIE_SECURE=true` ya van configurados para el front-end de Google.
+- `TRUST_PROXY=1`, `COOKIE_SECURE=true` y `TRUST_IAP_HEADERS=true` ya van configurados: la bitácora y el historial del panel registran la cuenta Google de quien actúa.
+- El esquema de la base se actualiza solo al arrancar la nueva revisión (migraciones automáticas).
 - Borrar todo: `gcloud run services delete sdg-autodiagnostico --region northamerica-south1` y `gcloud sql instances delete sdg-autodiagnostico-db` (borra los datos).

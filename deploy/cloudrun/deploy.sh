@@ -70,14 +70,8 @@ put_secret_once sdg-jwt-secret "$(openssl rand -hex 32)"
 put_secret_once sdg-admin-password "$(openssl rand -hex 20)"
 
 echo "== 5/7 Esquema"
-if [[ "${SKIP_SCHEMA:-false}" != "true" ]]; then
-  BUCKET="$SRC_BUCKET"
-  SQL_SA="$(g sql instances describe "$SQL_INSTANCE" --format='value(serviceAccountEmailAddress)')"
-  gcloud storage buckets add-iam-policy-binding "$BUCKET" --member "serviceAccount:${SQL_SA}" --role roles/storage.objectViewer >/dev/null
-  # 001_schema.sql usa CREATE TABLE IF NOT EXISTS: es seguro reimportarlo.
-  gcloud storage cp "$APP_DIR/docker/mysql/init/001_schema.sql" "$BUCKET/schema/001_schema.sql" --project "$PROJECT_ID" >/dev/null
-  g sql import sql "$SQL_INSTANCE" "$BUCKET/schema/001_schema.sql" --database "$DB_NAME" >/dev/null
-fi
+# La app aplica drizzle/*.sql al arrancar (server/_core/migrate.ts); no se importa nada aquí.
+echo "  migraciones automáticas al iniciar el servicio"
 
 echo "== 6/7 Imagen (Cloud Build)"
 cat > /tmp/cloudbuild-sdg.yaml <<EOF
@@ -112,7 +106,7 @@ if [[ "$ACCESS" == "iap" ]]; then ACCESS_FLAGS+=(--iap); else ACCESS_FLAGS=(--al
 g run deploy "$SERVICE" --image "$IMAGE" --region "$REGION" --service-account "$RUN_SA" \
   --add-cloudsql-instances "$CONN" \
   --set-secrets "DATABASE_URL=sdg-database-url:latest,JWT_SECRET=sdg-jwt-secret:latest,LOCAL_ADMIN_PASSWORD=sdg-admin-password:latest" \
-  --set-env-vars "SELF_HOSTED_MODE=true,LOCAL_ADMIN_USERNAME=admin,LOCAL_ADMIN_NAME=Administrador SDG,TRUST_PROXY=1,COOKIE_SECURE=true,ADMIN_SESSION_HOURS=8,PRIVACY_NOTICE_VERSION=${PRIVACY_NOTICE_VERSION:-}" \
+  --set-env-vars "SELF_HOSTED_MODE=true,TRUST_IAP_HEADERS=true,LOCAL_ADMIN_USERNAME=admin,LOCAL_ADMIN_NAME=Administrador SDG,TRUST_PROXY=1,COOKIE_SECURE=true,ADMIN_SESSION_HOURS=8,PRIVACY_NOTICE_VERSION=${PRIVACY_NOTICE_VERSION:-}" \
   --port 3000 --cpu 1 --memory 512Mi --min-instances 0 --max-instances 2 --concurrency 80 \
   "${ACCESS_FLAGS[@]}" >/dev/null
 

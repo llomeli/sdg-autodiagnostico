@@ -1,5 +1,27 @@
 # Changelog
 
+## 1.3.0 — 2026-10-31 · Portal de administración
+
+### Prospectos
+- Búsqueda (empresa, contacto, correo, razón social; comodines escapados), filtros por estatus, sector, urgencia, responsable (incl. "Sin asignar"), seguimiento (vencido / hoy / 7 días) y rango de fechas (hora de Ciudad de México); orden y paginación de 25 en servidor.
+- Seguimiento comercial: responsable, siguiente paso con fecha y hora, último contacto. Historial de actividad: notas, llamadas, correos y reuniones, más registros automáticos de cambio de estatus y de asignación, con autor.
+- Exportación CSV de la lista filtrada: confirmación previa, UTF-8 con BOM, fechas en hora de México, protección contra fórmulas, promedio por dominio, sin datos de interlocutores, tope de 5,000 filas y registro en bitácora.
+
+### Tablero
+- Prospectos, promedio general, nuevos sin asignar, siguientes pasos vencidos y mediana de horas al primer contacto; registros por semana (12 semanas), embudo por estatus, urgencia, madurez promedio por dominio y tabla por sector. Solo agregados.
+
+### Plataforma
+- Migraciones automáticas al arrancar (`server/_core/migrate.ts`): idempotentes, con candado en MySQL y reconocimiento de bases v1.1/v1.2 sin bitácora. `deploy.sh` ya no importa el esquema. `MIGRATE_ON_START=false` las desactiva.
+- Migración `0004_admin_followup.sql` (aditiva): columnas de seguimiento y tabla `lead_activities` con FK en cascada.
+- Conexiones MySQL forzadas a UTC: corrige horas desfasadas cuando el servidor de base de datos no está en UTC.
+- Imagen: `drizzle/*.sql` legibles por el usuario `node`, ya que los archivos venían con permisos 600.
+- En Cloud Run (`TRUST_IAP_HEADERS=true`), las acciones del panel se atribuyen a la cuenta Google que pasó por IAP.
+- `bootstrap-owner.sh` habilita Cloud Resource Manager API.
+- CI: pruebas de integración contra MySQL 8.4 (`TEST_DATABASE_URL`).
+
+### Pruebas
+- 51 pruebas, 6 de ellas de integración contra MySQL real. Recorridos en navegador del formulario público y del panel (escritorio y móvil) sin errores de consola.
+
 ## 1.2.0 — 2026-10-31 · Auditoría y endurecimiento para producción
 
 ### Corregido (bloqueantes)

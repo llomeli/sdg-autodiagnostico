@@ -19,7 +19,7 @@ ENV VITE_SELF_HOSTED_MODE=${VITE_SELF_HOSTED_MODE} \
     VITE_LEGAL_ENTITY_NAME=${VITE_LEGAL_ENTITY_NAME}
 RUN pnpm build \
  && rm -rf dist/public/__manus__ \
- && chmod -R a+rX dist
+ && chmod -R a+rX dist drizzle
 
 # ---- runtime: production dependencies only, non-root ---------------------------
 FROM node:22-bookworm-slim AS runtime
@@ -36,6 +36,8 @@ RUN pnpm install --prod --frozen-lockfile \
  && pnpm store prune \
  && rm -rf /root/.cache /root/.local/share/pnpm
 COPY --from=build /app/dist ./dist
+# SQL migrations applied at startup by server/_core/migrate.ts
+COPY --from=build /app/drizzle/*.sql ./drizzle/
 
 USER node
 EXPOSE 3000
