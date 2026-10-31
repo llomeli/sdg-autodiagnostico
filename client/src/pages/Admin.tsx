@@ -1,40 +1,185 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { ArrowLeft, ChevronRight, Download, LockKeyhole, LogIn, Mail, RefreshCw, UserRound } from "lucide-react";
+import { ArrowLeft, LockKeyhole, LogIn } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { startLogin } from "@/const";
 import { trpc } from "@/lib/trpc";
+import { DashboardView } from "./admin/DashboardView";
+import { ProspectsView } from "./admin/ProspectsView";
 
-const statusLabels = {
-  new: "Nuevo",
-  reviewing: "En revisión",
-  contacted: "Contactado",
-  qualified: "Calificado",
-  archived: "Archivado",
-} as const;
+type Tab = "prospects" | "dashboard";
 
 export default function Admin() {
   const [, setLocation] = useLocation();
   const { user, loading, isAuthenticated, logout } = useAuth();
   const selfHosted = import.meta.env.VITE_SELF_HOSTED_MODE === "true";
   const utils = trpc.useUtils();
-  const [credentials, setCredentials] = useState({ username: "", password: "" });
-  const [selectedId, setSelectedId] = useState<number | null>(null);
-  const submissions = trpc.admin.listSubmissions.useQuery(undefined, { enabled: isAuthenticated && user?.role === "admin" });
-  const details = trpc.admin.getSubmission.useQuery({ id: selectedId ?? 0 }, { enabled: Boolean(selectedId) && isAuthenticated && user?.role === "admin" });
-  const localLogin = trpc.auth.localLogin.useMutation({ onSuccess: data => utils.auth.me.setData(undefined, data) });
-  const deleteSubmission = trpc.admin.deleteSubmission.useMutation({ onSuccess: () => { setSelectedId(null); utils.admin.listSubmissions.invalidate(); } });
-  const confirmDelete = (id: number, name: string) => {
-    if (window.confirm(`Eliminar definitivamente el registro de ${name} y todas sus respuestas. Usa esta opción sólo para solicitudes de cancelación/eliminación. ¿Continuar?`)) {
-      deleteSubmission.mutate({ id, confirm: "ELIMINAR" });
-    }
-  };
-  const updateStatus = trpc.admin.updateStatus.useMutation({ onSuccess: () => { utils.admin.listSubmissions.invalidate(); if (selectedId) utils.admin.getSubmission.invalidate({ id: selectedId }); } });
+  const [credentials, setCredentials] = useState({
+    username: "",
+    password: "",
+  });
+  const [tab, setTab] = useState<Tab>("prospects");
+  const localLogin = trpc.auth.localLogin.useMutation({
+    onSuccess: data => utils.auth.me.setData(undefined, data),
+  });
 
   if (loading) return <div className="admin-loading">Cargando acceso…</div>;
-  if (!isAuthenticated) return <main className="admin-gate"><button className="back-home admin-back" onClick={() => setLocation("/")}><ArrowLeft size={16} /> Volver al diagnóstico</button><div className="gate-card"><div className="gate-icon"><LockKeyhole size={28} /></div><p className="eyebrow">ACCESO INTERNO</p><h1>Gestión de<br /><em>prospectos.</em></h1><p>{selfHosted ? "Ingresa con las credenciales configuradas en el servidor para consultar los registros y respuestas." : "Inicia sesión para consultar los registros, respuestas y prioridades capturadas en el autodiagnóstico."}</p>{selfHosted ? <form className="local-login-form" onSubmit={event => { event.preventDefault(); localLogin.mutate(credentials); }}><label>Usuario<input value={credentials.username} onChange={event => setCredentials(prev => ({ ...prev, username: event.target.value }))} autoComplete="username" /></label><label>Contraseña<input type="password" value={credentials.password} onChange={event => setCredentials(prev => ({ ...prev, password: event.target.value }))} autoComplete="current-password" /></label>{localLogin.error && <p className="admin-error">{localLogin.error.message}</p>}<button className="button button-aqua" type="submit" disabled={localLogin.isPending}> {localLogin.isPending ? "Validando…" : "Iniciar sesión"} <LogIn size={17} /></button></form> : <button className="button button-aqua" onClick={() => startLogin()}>Iniciar sesión <LogIn size={17} /></button>}</div></main>;
-  if (user?.role !== "admin") return <main className="admin-gate"><button className="back-home admin-back" onClick={() => setLocation("/")}><ArrowLeft size={16} /> Volver al diagnóstico</button><div className="gate-card"><div className="gate-icon"><LockKeyhole size={28} /></div><p className="eyebrow">ACCESO RESTRINGIDO</p><h1>Permiso<br /><em>requerido.</em></h1><p>Esta sección está reservada para administradores autorizados del proyecto.</p><button className="button button-outline" onClick={() => logout()}>Cerrar sesión</button></div></main>;
 
-  const selected = details.data;
-  return <main className="admin-page"><header className="admin-header"><button className="brand-admin" onClick={() => setLocation("/")}><img src="/sdg-logo.png" alt="SDG Group" /><b>autodiagnóstico</b></button><div><span>{user.name || user.email}</span><button onClick={() => logout()}>Cerrar sesión</button></div></header><section className="admin-main"><div className="admin-intro"><div><p className="eyebrow">CAPTURA Y SEGUIMIENTO</p><h1>Prospectos de<br /><em>gobierno de datos.</em></h1></div><button className="button button-outline" onClick={() => submissions.refetch()}><RefreshCw size={16} /> Actualizar</button></div><div className="admin-stats"><div><span>Total</span><b>{submissions.data?.length ?? 0}</b></div><div><span>Nuevos</span><b>{submissions.data?.filter(item => item.status === "new").length ?? 0}</b></div><div><span>Calificados</span><b>{submissions.data?.filter(item => item.status === "qualified").length ?? 0}</b></div></div><div className="admin-grid"><section className="leads-list"><div className="list-title"><h2>Registros</h2><span>{submissions.isLoading ? "Cargando" : `${submissions.data?.length ?? 0} prospectos`}</span></div>{submissions.error && <p className="admin-error">No fue posible recuperar los registros.</p>}{!submissions.isLoading && !submissions.data?.length && <div className="empty-leads"><UserRound size={28} /><p>Aún no hay prospectos capturados.</p><small>Los registros enviados desde el autodiagnóstico aparecerán aquí.</small></div>}{submissions.data?.map(item => <button className={`lead-row ${selectedId === item.id ? "selected" : ""}`} key={item.id} onClick={() => setSelectedId(item.id)}><span className="lead-avatar">{item.fullName.slice(0, 1)}</span><div><b>{item.fullName}</b><small>{item.companyName} · {item.jobTitle}</small></div><em>{item.overallScore != null ? (item.overallScore / 100).toFixed(1) : "—"}</em><ChevronRight size={16} /></button>)}</section><section className="lead-detail">{!selected && <div className="empty-detail"><Mail size={29} /><h2>Selecciona un registro</h2><p>Consulta el perfil, la prioridad y las respuestas por dominio de cada prospecto.</p></div>}{details.isLoading && <div className="empty-detail"><RefreshCw className="spin" size={28} /><p>Cargando diagnóstico…</p></div>}{selected && <div className="detail-content"><div className="detail-top"><div><p className="eyebrow">{selected.status}</p><h2>{selected.fullName}</h2><p>{selected.jobTitle}{selected.area ? ` · ${selected.area}` : ""}</p></div><select value={selected.status} onChange={e => updateStatus.mutate({ id: selected.id, status: e.target.value as keyof typeof statusLabels })}>{Object.entries(statusLabels).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select><button className="button button-outline admin-delete" type="button" disabled={deleteSubmission.isPending} onClick={() => confirmDelete(selected.id, selected.fullName)}>Eliminar registro</button></div><div className="detail-info"><div><span>Empresa</span><b>{selected.companyName}</b></div><div><span>Sector</span><b>{selected.sector}</b></div><div><span>Correo</span><b>{selected.workEmail}</b></div><div><span>Teléfono</span><b>{selected.phone || "No compartido"}</b></div><div><span>Impacto</span><b>{selected.businessImpact}</b></div><div><span>Urgencia</span><b>{selected.urgency}</b></div></div><div className="detail-section"><h3>Principal preocupación</h3><p>{selected.primaryConcern}</p></div><div className="detail-section"><h3>Lectura de madurez</h3><div className="domain-results">{Array.from(new Set(selected.responses.map(answer => answer.domain))).map(domain => { const rows = selected.responses.filter(answer => answer.domain === domain); const values = rows.filter(answer => answer.score !== null).map(answer => answer.score as number); const score = values.length ? values.reduce((a, b) => a + b, 0) / values.length : 0; return <div key={domain}><span>{domain}</span><b>{score.toFixed(1)}</b><i><em style={{ width: `${score * 20}%` }} /></i></div>; })}</div></div><div className="detail-section"><h3>Respuestas con prioridad alta</h3>{selected.responses.filter(answer => answer.priority === "Alta").length ? <div className="priority-list">{selected.responses.filter(answer => answer.priority === "Alta").map(answer => <div key={answer.id}><b>{answer.questionId}</b><span>{answer.responsibleRole || "Sin responsable"} · {answer.processSystem || "Sin proceso"}</span><p>{answer.comments || "Sin comentario"}</p></div>)}</div> : <p className="muted">No se registraron prioridades altas.</p>}</div></div>}</section></div></section></main>;
+  if (!isAuthenticated) {
+    return (
+      <main className="admin-gate">
+        <button
+          className="back-home admin-back"
+          onClick={() => setLocation("/")}
+        >
+          <ArrowLeft size={16} /> Volver al diagnóstico
+        </button>
+        <div className="gate-card">
+          <div className="gate-icon">
+            <LockKeyhole size={28} />
+          </div>
+          <p className="eyebrow">ACCESO INTERNO</p>
+          <h1>
+            Gestión de
+            <br />
+            <em>prospectos.</em>
+          </h1>
+          <p>
+            {selfHosted
+              ? "Ingresa con las credenciales configuradas en el servidor para consultar los registros y darles seguimiento."
+              : "Inicia sesión para consultar los registros, respuestas y prioridades capturadas en el autodiagnóstico."}
+          </p>
+          {selfHosted ? (
+            <form
+              className="local-login-form"
+              onSubmit={event => {
+                event.preventDefault();
+                localLogin.mutate(credentials);
+              }}
+            >
+              <label>
+                Usuario
+                <input
+                  value={credentials.username}
+                  onChange={event =>
+                    setCredentials(prev => ({
+                      ...prev,
+                      username: event.target.value,
+                    }))
+                  }
+                  autoComplete="username"
+                />
+              </label>
+              <label>
+                Contraseña
+                <input
+                  type="password"
+                  value={credentials.password}
+                  onChange={event =>
+                    setCredentials(prev => ({
+                      ...prev,
+                      password: event.target.value,
+                    }))
+                  }
+                  autoComplete="current-password"
+                />
+              </label>
+              {localLogin.error && (
+                <p className="admin-error">{localLogin.error.message}</p>
+              )}
+              <button
+                className="button button-aqua"
+                type="submit"
+                disabled={localLogin.isPending}
+              >
+                {localLogin.isPending ? "Validando…" : "Iniciar sesión"}{" "}
+                <LogIn size={17} />
+              </button>
+            </form>
+          ) : (
+            <button className="button button-aqua" onClick={() => startLogin()}>
+              Iniciar sesión <LogIn size={17} />
+            </button>
+          )}
+        </div>
+      </main>
+    );
+  }
+
+  if (user?.role !== "admin") {
+    return (
+      <main className="admin-gate">
+        <button
+          className="back-home admin-back"
+          onClick={() => setLocation("/")}
+        >
+          <ArrowLeft size={16} /> Volver al diagnóstico
+        </button>
+        <div className="gate-card">
+          <div className="gate-icon">
+            <LockKeyhole size={28} />
+          </div>
+          <p className="eyebrow">ACCESO RESTRINGIDO</p>
+          <h1>
+            Permiso
+            <br />
+            <em>requerido.</em>
+          </h1>
+          <p>
+            Esta sección está reservada para administradores autorizados del
+            proyecto.
+          </p>
+          <button className="button button-outline" onClick={() => logout()}>
+            Cerrar sesión
+          </button>
+        </div>
+      </main>
+    );
+  }
+
+  return (
+    <main className="admin-page">
+      <header className="admin-header">
+        <button className="brand-admin" onClick={() => setLocation("/")}>
+          <img src="/sdg-logo.png" alt="SDG Group" />
+          <b>autodiagnóstico</b>
+        </button>
+        <div>
+          <span>{user.name || user.email}</span>
+          <button onClick={() => logout()}>Cerrar sesión</button>
+        </div>
+      </header>
+      <section className="admin-main">
+        <div className="admin-intro">
+          <div>
+            <p className="eyebrow">CAPTURA Y SEGUIMIENTO</p>
+            <h1>
+              Prospectos de
+              <br />
+              <em>gobierno de datos.</em>
+            </h1>
+          </div>
+          <nav className="admin-tabs" role="tablist" aria-label="Secciones">
+            <button
+              role="tab"
+              aria-selected={tab === "prospects"}
+              className={tab === "prospects" ? "active" : ""}
+              onClick={() => setTab("prospects")}
+            >
+              Prospectos
+            </button>
+            <button
+              role="tab"
+              aria-selected={tab === "dashboard"}
+              className={tab === "dashboard" ? "active" : ""}
+              onClick={() => setTab("dashboard")}
+            >
+              Tablero
+            </button>
+          </nav>
+        </div>
+        {tab === "prospects" ? <ProspectsView /> : <DashboardView />}
+      </section>
+    </main>
+  );
 }

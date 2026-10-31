@@ -59,6 +59,11 @@ export const prospectSubmissions = mysqlTable(
       .default("new")
       .notNull(),
     source: varchar("source", { length: 80 }).default("web-autodiagnostico").notNull(),
+    /** Commercial follow-up (v1.3.0). Free text so the team can assign without user accounts. */
+    assignedTo: varchar("assignedTo", { length: 120 }),
+    nextAction: varchar("nextAction", { length: 255 }),
+    nextActionAt: timestamp("nextActionAt"),
+    lastContactAt: timestamp("lastContactAt"),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
     updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   },
@@ -66,6 +71,8 @@ export const prospectSubmissions = mysqlTable(
     index("prospect_submissions_email_idx").on(table.workEmail),
     index("prospect_submissions_created_idx").on(table.createdAt),
     index("prospect_submissions_status_idx").on(table.status),
+    index("prospect_submissions_assigned_idx").on(table.assignedTo),
+    index("prospect_submissions_next_action_idx").on(table.nextActionAt),
   ],
 );
 
@@ -94,7 +101,26 @@ export const assessmentResponses = mysqlTable(
   ],
 );
 
+export const ACTIVITY_TYPES = ["note", "call", "email", "meeting", "status", "assignment"] as const;
+
+/** Follow-up history of a submission: notes, contacts and automatic status/assignment changes. */
+export const leadActivities = mysqlTable(
+  "lead_activities",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    submissionId: int("submissionId")
+      .notNull()
+      .references(() => prospectSubmissions.id, { onDelete: "cascade" }),
+    type: mysqlEnum("type", ACTIVITY_TYPES).notNull(),
+    body: text("body").notNull(),
+    author: varchar("author", { length: 120 }).notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  table => [index("lead_activities_submission_idx").on(table.submissionId, table.createdAt)],
+);
+
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 export type ProspectSubmission = typeof prospectSubmissions.$inferSelect;
 export type AssessmentResponse = typeof assessmentResponses.$inferSelect;
+export type LeadActivity = typeof leadActivities.$inferSelect;

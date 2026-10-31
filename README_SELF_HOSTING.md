@@ -1,4 +1,4 @@
-# SDG Group | Autodiagnóstico de Gobierno de Datos — Self-hosted (v1.2.0)
+# SDG Group | Autodiagnóstico de Gobierno de Datos — Self-hosted (v1.3.0)
 
 La aplicación web corre en un contenedor Node.js (usuario sin privilegios, sistema de archivos de solo lectura) y guarda prospectos y respuestas en un contenedor MySQL 8.4 persistente que no se publica fuera de la red de Docker. No depende de Manus OAuth, Manus Storage ni Google Fonts.
 
@@ -77,7 +77,11 @@ Login local con las credenciales de `.env`; sesión en cookie HttpOnly, SameSite
 - `restore.sh` sobrescribe la base y pide escribir `RESTAURAR`. Ensaya la restauración en staging y guarda la evidencia.
 - Los datos borrados desde el panel siguen existiendo en respaldos anteriores hasta que caduquen por retención; documenta ese plazo en el Aviso de Privacidad.
 
-## Actualizar desde v1.1.0
+## Actualizar (v1.3.0 en adelante)
+
+Desde v1.3.0 la app aplica sola las migraciones de `drizzle/` al arrancar (también sobre bases creadas por v1.1.0/v1.2.0). Basta con `./backup.sh` y `docker compose up -d --build`; el log muestra `[Migrate] … aplicada`.
+
+## Actualizar desde v1.1.0 (manual, solo si usas v1.2.0)
 
 1. `./backup.sh` (con la versión nueva del script; la de v1.1.0 no pasaba la contraseña al contenedor).
 2. Sustituye los archivos conservando `.env` y el volumen. Añade a `.env` las variables nuevas de `config.env.template`.

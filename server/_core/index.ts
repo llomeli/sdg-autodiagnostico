@@ -15,6 +15,7 @@ import {
   submitRateLimiter,
 } from "./security";
 import { pingDb } from "../db";
+import { runMigrations } from "./migrate";
 
 const isDevelopment = process.env.NODE_ENV === "development";
 
@@ -47,6 +48,11 @@ async function startServer() {
         "Configuración inválida para producción; revisa las variables de entorno."
       );
     }
+  }
+
+  // Schema changes ship with the image and are applied before serving traffic.
+  if (process.env.MIGRATE_ON_START !== "false") {
+    await runMigrations();
   }
 
   const app = express();

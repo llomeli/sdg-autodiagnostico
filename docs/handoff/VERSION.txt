@@ -1,0 +1,9 @@
+Nombre: SDG_Autodiagnostico_Gobierno_Datos
+Versión: 1.3.0 (portal de administración) sobre handoff 1.2.0
+Fecha de corte: 2026-10-31
+Base: paquete v1.1.0 (commit de código 142d681; ZIP SHA-256 b14eedd014eae5d00351d469fdd736879a933f1535963be688dd0bc9a01992d2)
+Cambios: auditoría de código/seguridad/prácticas y remediación técnica. Ver CHANGELOG.md y docs/09_AUDITORIA_Y_REMEDIACION_v1.2.0.md.
+Pruebas del corte: 34 Vitest aprobadas (7 archivos), TypeScript check y build correctos; docker build --no-cache y arranque del contenedor verificados con imagen base equivalente Node 22 (Docker Hub no accesible en el entorno de auditoría); sondas de seguridad y recorrido de navegador con datos sintéticos; pnpm audit --prod sin vulnerabilidades.
+Pendiente de validar en destino: imágenes oficiales node:22-bookworm-slim y mysql:8.4, docker compose completo con backup.sh/restore.sh, TLS, workflow de CI.
+Excluidos intencionalmente: secretos/credenciales, archivos de entorno, .git, node_modules, build output, logs, datos de prospectos y respaldos.
+Confidencialidad: handoff interno. El Excel fuente y el workbook v2 no son para distribución pública sin revisión y autorización.
