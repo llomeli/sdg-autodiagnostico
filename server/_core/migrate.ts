@@ -29,6 +29,7 @@ const FINGERPRINTS: Record<
     tables: ["lead_activities"],
     columns: [["prospect_submissions", "lastContactAt"]],
   },
+  "0005": { columns: [["prospect_submissions", "marketingConsent"]] },
 };
 
 export function migrationsDir() {

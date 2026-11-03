@@ -19,13 +19,23 @@ const parseTrustProxy = (
   return raw;
 };
 
+/**
+ * Public deployment (v1.4.0): serves only the questionnaire. The admin panel and its
+ * API answer 404 and local admin login is disabled; the panel runs as a separate
+ * service behind IAP.
+ */
+const publicSiteOnly = process.env.PUBLIC_SITE_ONLY === "true";
+
 export const ENV = {
+  publicSiteOnly,
   appId: process.env.VITE_APP_ID ?? "",
   cookieSecret: process.env.JWT_SECRET ?? "",
   databaseUrl: process.env.DATABASE_URL ?? "",
   selfHosted: process.env.SELF_HOSTED_MODE === "true",
   localAdminUsername: process.env.LOCAL_ADMIN_USERNAME ?? "admin",
-  localAdminPassword: process.env.LOCAL_ADMIN_PASSWORD ?? "",
+  localAdminPassword: publicSiteOnly
+    ? ""
+    : (process.env.LOCAL_ADMIN_PASSWORD ?? ""),
   localAdminName: process.env.LOCAL_ADMIN_NAME ?? "Administrador local",
   oAuthServerUrl: process.env.OAUTH_SERVER_URL ?? "",
   ownerOpenId: process.env.OWNER_OPEN_ID ?? "",
@@ -59,13 +69,17 @@ export function validateProductionEnv(env: NodeJS.ProcessEnv = process.env): {
     errors.push("JWT_SECRET debe tener al menos 32 caracteres aleatorios.");
 
   if (env.SELF_HOSTED_MODE === "true") {
-    const pwd = env.LOCAL_ADMIN_PASSWORD ?? "";
-    if (pwd.length < 16 || placeholder.test(pwd))
-      errors.push(
-        "LOCAL_ADMIN_PASSWORD debe tener al menos 16 caracteres y no ser un marcador."
-      );
-    if (pwd && pwd === jwt)
-      errors.push("LOCAL_ADMIN_PASSWORD y JWT_SECRET deben ser distintos.");
+    if (env.PUBLIC_SITE_ONLY === "true") {
+      // No admin panel on the public service: the password is neither needed nor mounted.
+    } else {
+      const pwd = env.LOCAL_ADMIN_PASSWORD ?? "";
+      if (pwd.length < 16 || placeholder.test(pwd))
+        errors.push(
+          "LOCAL_ADMIN_PASSWORD debe tener al menos 16 caracteres y no ser un marcador."
+        );
+      if (pwd && pwd === jwt)
+        errors.push("LOCAL_ADMIN_PASSWORD y JWT_SECRET deben ser distintos.");
+    }
   } else if (!env.OAUTH_SERVER_URL) {
     errors.push("OAUTH_SERVER_URL es obligatorio fuera del modo self-hosted.");
   }
