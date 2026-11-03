@@ -22,8 +22,8 @@ import { trpc } from "@/lib/trpc";
 // Set at build time (see config.env.template). The fallbacks are deliberately
 // visible so an unconfigured build is obvious in review instead of shipping a
 // fake legal text.
-const PRIVACY_NOTICE_URL = import.meta.env.VITE_PRIVACY_NOTICE_URL || "#aviso-de-privacidad-pendiente";
-const LEGAL_ENTITY_NAME = import.meta.env.VITE_LEGAL_ENTITY_NAME || "[RESPONSABLE PENDIENTE DE APROBACIÓN LEGAL]";
+const PRIVACY_NOTICE_URL = import.meta.env.VITE_PRIVACY_NOTICE_URL || "/aviso-de-privacidad";
+const LEGAL_ENTITY_NAME = import.meta.env.VITE_LEGAL_ENTITY_NAME || "Optimissa Capital Markets";
 
 const sectors = ["Comercio", "Servicios profesionales", "Manufactura", "Logística y transporte", "Salud", "Educación", "Construcción e inmobiliario", "Tecnología", "Agroindustria", "Otro"];
 const employeeRanges = ["1–10", "11–50", "51–100", "101–250", "251–500", "Más de 500"];
@@ -55,6 +55,7 @@ type ContactForm = {
   upcomingProject: string;
   expectedOutcome: string;
   consent: boolean;
+  marketingConsent: boolean;
 };
 
 type Interlocutor = {
@@ -78,7 +79,7 @@ type Answer = {
 const emptyContact: ContactForm = {
   companyName: "", legalName: "", website: "", sector: "", employeeRange: "", state: "", city: "", systems: "", keyProcesses: "", criticalData: "",
   interlocutors: [{ fullName: "", jobTitle: "", area: "", email: "", phone: "", responsibility: "" }, { fullName: "", jobTitle: "", area: "", email: "", phone: "", responsibility: "" }],
-  fullName: "", jobTitle: "", area: "", workEmail: "", phone: "", preferredChannel: "", decisionRole: "", primaryConcern: "", businessImpact: "", urgency: "", upcomingProject: "", expectedOutcome: "", consent: false,
+  fullName: "", jobTitle: "", area: "", workEmail: "", phone: "", preferredChannel: "", decisionRole: "", primaryConcern: "", businessImpact: "", urgency: "", upcomingProject: "", expectedOutcome: "", consent: false, marketingConsent: false,
 };
 
 function getEmptyAnswers() {
@@ -239,6 +240,7 @@ export default function Home() {
       upcomingProject: contact.upcomingProject || undefined,
       expectedOutcome: contact.expectedOutcome || undefined,
       consent: true as const,
+      marketingConsent: contact.marketingConsent,
       responses: domains.flatMap(domain => domain.questions.map(question => ({
         domain: domain.id,
         questionId: question.id,
@@ -359,7 +361,9 @@ function ProfileStep({ contact, updateContact, updateInterlocutor, websiteValid,
     <section className="form-block"><div className="block-title"><Sparkles size={19} /><div><h3>Prioridad de negocio</h3><p>Nos ayuda a contextualizar tu resultado</p></div></div>
       <div className="form-grid two"><div className="span-2"><FieldLabel>¿Cuál es el problema de datos que más les preocupa? *</FieldLabel><textarea value={contact.primaryConcern} onChange={e => updateContact("primaryConcern", e.target.value)} placeholder="Describe brevemente el reto, la consecuencia o la oportunidad que te trajo a este diagnóstico." rows={4} /></div><div><FieldLabel>Impacto percibido *</FieldLabel><select value={contact.businessImpact} onChange={e => updateContact("businessImpact", e.target.value)}><option value="">Selecciona una opción</option>{impacts.map(item => <option key={item}>{item}</option>)}</select></div><div><FieldLabel>Urgencia *</FieldLabel><select value={contact.urgency} onChange={e => updateContact("urgency", e.target.value)}><option value="">Selecciona una opción</option>{urgencies.map(item => <option key={item}>{item}</option>)}</select></div><div className="span-2"><FieldLabel optional>Proyecto o cambio próximo</FieldLabel><input value={contact.upcomingProject} onChange={e => updateContact("upcomingProject", e.target.value)} placeholder="Ej. cambio de ERP, lanzamiento de canal digital, reporte regulatorio" /></div></div>
     </section>
-    <label className="consent"><input type="checkbox" checked={contact.consent} onChange={e => updateContact("consent", e.target.checked)} /><span><b>Autorizo el contacto comercial relacionado con este diagnóstico. *</b> He leído el <a href={PRIVACY_NOTICE_URL} target="_blank" rel="noopener noreferrer">Aviso de Privacidad de {LEGAL_ENTITY_NAME}</a>.</span></label>
+    <p className="consent-summary">{LEGAL_ENTITY_NAME}, con domicilio en Avenida Chapultepec 480, piso 10, Col. Roma Norte, C.P. 06700, Ciudad de México, trata tus datos de contacto, de tu empresa y tus respuestas para generar tu diagnóstico y darte seguimiento; podrá compartirlos con empresas de su grupo para ese fin. No solicitamos datos sensibles. Para negarte a los fines secundarios o ejercer tus derechos ARCO escribe a celso.sanchez@sdggroup.com. Consulta el <a href={PRIVACY_NOTICE_URL} target="_blank" rel="noopener noreferrer">Aviso de Privacidad Integral</a>.</p>
+    <label className="consent"><input type="checkbox" checked={contact.consent} onChange={e => updateContact("consent", e.target.checked)} /><span><b>He leído el <a href={PRIVACY_NOTICE_URL} target="_blank" rel="noopener noreferrer">Aviso de Privacidad de {LEGAL_ENTITY_NAME}</a> y autorizo el tratamiento de mis datos para recibir mi diagnóstico y ser contactado sobre él. *</b></span></label>
+    <label className="consent"><input type="checkbox" checked={contact.marketingConsent} onChange={e => updateContact("marketingConsent", e.target.checked)} /><span>Acepto recibir contenidos, invitaciones y propuestas de servicios de SDG Group. (Opcional)</span></label>
     {!optionalContactFieldsValid && <div className="profile-validation" role="alert"><CircleAlert size={17} /><span>Corrige los campos opcionales marcados en rojo antes de continuar.</span></div>}
     <div className="stage-actions"><button className="button button-outline" onClick={onBack}><ArrowLeft size={17} /> Atrás</button><button className="button button-navy" onClick={onNext}>Continuar al diagnóstico <ArrowRight size={17} /></button></div>
   </div>;

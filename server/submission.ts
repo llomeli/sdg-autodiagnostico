@@ -109,6 +109,8 @@ export const leadSchema = z
     upcomingProject: optionalText(2000),
     expectedOutcome: optionalText(2000),
     consent: z.literal(true),
+    /** Secondary purposes (marketing content); optional and unchecked by default. */
+    marketingConsent: z.boolean().optional().default(false),
     /** Accepted for backwards compatibility with older clients; ignored. */
     overallScore: z.number().optional(),
     responses: z.array(answerSchema).length(totalQuestions),

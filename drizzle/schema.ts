@@ -54,6 +54,8 @@ export const prospectSubmissions = mysqlTable(
     consentAt: timestamp("consentAt").notNull(),
     /** Version/identifier of the Aviso de Privacidad shown when consent was given. */
     privacyNoticeVersion: varchar("privacyNoticeVersion", { length: 40 }),
+    /** Optional consent for secondary purposes (marketing content), v1.4.0. */
+    marketingConsent: boolean("marketingConsent").default(false).notNull(),
     overallScore: int("overallScore"),
     status: mysqlEnum("status", ["new", "reviewing", "contacted", "qualified", "archived"])
       .default("new")

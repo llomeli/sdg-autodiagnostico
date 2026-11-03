@@ -26,7 +26,7 @@ REPO="${REPO:-sdg}"
 ACCESS="${ACCESS:-iap}"
 APP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 TAG="$(date +%Y%m%d-%H%M%S)"
-IMAGE="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO}/${SERVICE}:${TAG}"
+IMAGE="${IMAGE:-${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO}/${SERVICE}:${TAG}}"
 
 g() { gcloud --project "$PROJECT_ID" --quiet "$@"; }
 secret_exists() { g secrets describe "$1" >/dev/null 2>&1; }
@@ -86,7 +86,8 @@ options:
   logging: CLOUD_LOGGING_ONLY
 EOF
 # Siempre con cuenta propia: sin --service-account correría con la cuenta por defecto.
-g builds submit "$APP_DIR" --config /tmp/cloudbuild-sdg.yaml --region "$REGION" \
+# SKIP_BUILD=1 reutiliza IMAGE (p. ej. la misma imagen para el servicio público y el panel).
+[[ -n "${SKIP_BUILD:-}" ]] || g builds submit "$APP_DIR" --config /tmp/cloudbuild-sdg.yaml --region "$REGION" \
   --service-account "projects/${PROJECT_ID}/serviceAccounts/${BUILD_SA}" \
   --gcs-source-staging-dir "${SRC_BUCKET}/source"
 
@@ -103,10 +104,20 @@ fi
 ACCESS_FLAGS=(--no-allow-unauthenticated)
 if [[ "$ACCESS" == "iap" ]]; then ACCESS_FLAGS+=(--iap); else ACCESS_FLAGS=(--allow-unauthenticated); fi
 
+# ACCESS=public: solo el cuestionario (PUBLIC_SITE_ONLY), sin panel ni contraseña de admin.
+# ACCESS=iap: cuestionario + panel /admin, solo para IAP_MEMBERS.
+if [[ "$ACCESS" == "public" ]]; then
+  SECRETS="DATABASE_URL=sdg-database-url:latest,JWT_SECRET=sdg-jwt-secret:latest"
+  ENVS="SELF_HOSTED_MODE=true,PUBLIC_SITE_ONLY=true,TRUST_PROXY=1,COOKIE_SECURE=true,PRIVACY_NOTICE_VERSION=${PRIVACY_NOTICE_VERSION:-}"
+else
+  SECRETS="DATABASE_URL=sdg-database-url:latest,JWT_SECRET=sdg-jwt-secret:latest,LOCAL_ADMIN_PASSWORD=sdg-admin-password:latest"
+  ENVS="SELF_HOSTED_MODE=true,TRUST_IAP_HEADERS=true,LOCAL_ADMIN_USERNAME=admin,LOCAL_ADMIN_NAME=Administrador SDG,TRUST_PROXY=1,COOKIE_SECURE=true,ADMIN_SESSION_HOURS=8,PRIVACY_NOTICE_VERSION=${PRIVACY_NOTICE_VERSION:-}"
+fi
+
 g run deploy "$SERVICE" --image "$IMAGE" --region "$REGION" --service-account "$RUN_SA" \
   --add-cloudsql-instances "$CONN" \
-  --set-secrets "DATABASE_URL=sdg-database-url:latest,JWT_SECRET=sdg-jwt-secret:latest,LOCAL_ADMIN_PASSWORD=sdg-admin-password:latest" \
-  --set-env-vars "SELF_HOSTED_MODE=true,TRUST_IAP_HEADERS=true,LOCAL_ADMIN_USERNAME=admin,LOCAL_ADMIN_NAME=Administrador SDG,TRUST_PROXY=1,COOKIE_SECURE=true,ADMIN_SESSION_HOURS=8,PRIVACY_NOTICE_VERSION=${PRIVACY_NOTICE_VERSION:-}" \
+  --set-secrets "$SECRETS" \
+  --set-env-vars "$ENVS" \
   --port 3000 --cpu 1 --memory 512Mi --min-instances 0 --max-instances 2 --concurrency 80 \
   "${ACCESS_FLAGS[@]}" >/dev/null
 

@@ -133,6 +133,8 @@ export const EXPORT_COLUMNS = [
   ["nextAction", "Siguiente paso"],
   ["nextActionAt", "Fecha siguiente paso"],
   ["lastContactAt", "Último contacto"],
+  ["privacyNoticeVersion", "Versión del aviso"],
+  ["marketingConsent", "Acepta contenidos comerciales"],
 ] as const;
 
 export function exportHeader() {
@@ -160,6 +162,7 @@ export function exportRow(
       if (key === "overallScore")
         return typeof value === "number" ? (value / 100).toFixed(2) : "";
       if (value instanceof Date) return mxDateTime(value);
+      if (typeof value === "boolean") return value ? "Sí" : "No";
       return value;
     }),
     ...domains.map(domain => {

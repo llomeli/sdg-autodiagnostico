@@ -76,6 +76,19 @@ async function startServer() {
   applySecurityHeaders(app);
 
   // The largest legitimate submission (46 answers with every optional field full) is < 200 KB.
+  if (ENV.publicSiteOnly) {
+    // The panel lives on the IAP-protected service; here it simply does not exist.
+    const adminOnly =
+      /^\/admin(\/|$)|^\/api\/trpc\/.*(admin\.|auth\.localLogin)/;
+    app.use((req, res, next) => {
+      if (adminOnly.test(req.path)) {
+        res.status(404).type("text/plain").send("Not found");
+        return;
+      }
+      next();
+    });
+  }
+
   app.use(express.json({ limit: "256kb" }));
   app.use(express.urlencoded({ limit: "16kb", extended: false }));
 

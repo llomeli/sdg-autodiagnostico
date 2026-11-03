@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.4.0 — 2026-11-03 · Publicación
+
+- Aviso de Privacidad Integral v1.0 en `/aviso-de-privacidad` (responsable: Optimissa Capital Markets; contacto: celso.sanchez@sdggroup.com). Aviso simplificado junto a las casillas del formulario.
+- Casilla opcional, desmarcada por defecto, para finalidades secundarias (`marketingConsent`, migración 0005). La versión del aviso y esta casilla salen en el CSV.
+- `PUBLIC_SITE_ONLY=true`: el servicio público solo sirve el cuestionario; `/admin`, la API del panel y el inicio de sesión responden 404 y no se monta la contraseña de admin. El panel corre aparte detrás de IAP.
+- `deploy.sh`: `ACCESS=public` despliega el servicio público; `SKIP_BUILD=1` + `IMAGE` reutilizan la misma imagen.
+
 ## 1.3.0 — 2026-10-31 · Portal de administración
 
 ### Prospectos
